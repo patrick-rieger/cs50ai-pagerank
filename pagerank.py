@@ -57,8 +57,23 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    raise NotImplementedError
-
+    probability_distribution = dict()
+    # If page has no outgoing links, then transition_model should return a probability distribution that chooses 
+    # randomly among all pages with equal probability. 
+    # (In other words, if a page has no links, we can pretend it has links to all pages in the corpus, including itself.)
+    if not corpus[page]:
+        d = 1 / len(corpus)
+        for p in corpus:
+            probability_distribution[p] = d
+        return probability_distribution
+    
+    randomly_among_linked = damping_factor / len(corpus[page])
+    randomly_among_all = (1 - damping_factor) / len(corpus)
+    for p in corpus:
+        probability_distribution[p] = randomly_among_all
+    for p in corpus[page]:
+        probability_distribution[p] += randomly_among_linked
+    return probability_distribution
 
 def sample_pagerank(corpus, damping_factor, n):
     """
@@ -69,8 +84,30 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    # Starting the dict
+    PageRank = dict()
+    for p in corpus:
+        PageRank[p] = 0
 
+    # Randomly choosing a page
+    page = random.choice([key for key in corpus.keys()])
+
+    count = n
+    
+    while count: # While n > 0
+        PageRank[page] += 1
+        population = []
+        weights = []
+        for (p, w) in transition_model(corpus, page, damping_factor).items():
+            population.append(p)
+            weights.append(w)
+
+        page = random.choices(population, weights, k=1).pop()
+        count -= 1
+    
+    # PageRank = dict((key, value/n) for (key,value) in PageRank)
+    PageRank.update({key: PageRank[key] / n for key in PageRank.keys()})
+    return PageRank
 
 def iterate_pagerank(corpus, damping_factor):
     """
